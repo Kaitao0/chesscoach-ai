@@ -13,7 +13,7 @@ import type { MoveReview } from "../types";
 
 export function ReviewPage({ gameId, navigate }: { gameId: string; navigate: Navigate }) {
   const game = useMemo(() => getGameById(gameId), [gameId]);
-  const [selected, setSelected] = useState<MoveReview | undefined>(game?.moveReview[game.moveReview.length - 1]);
+  const [selected, setSelected] = useState<MoveReview | undefined>(undefined);
   const [showRetry, setShowRetry] = useState(false);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
 
@@ -31,14 +31,15 @@ export function ReviewPage({ gameId, navigate }: { gameId: string; navigate: Nav
     );
   }
 
-  const active = selected ?? game.moveReview[game.moveReview.length - 1];
+  const reviewedGame = game;
+  const active = selected ?? reviewedGame.moveReview[reviewedGame.moveReview.length - 1];
 
   async function exportPgn() {
     try {
-      await navigator.clipboard.writeText(game.pgn);
+      await navigator.clipboard.writeText(reviewedGame.pgn);
       setExportNotice("PGN copiato negli appunti.");
     } catch {
-      setExportNotice(game.pgn || "PGN non disponibile.");
+      setExportNotice(reviewedGame.pgn || "PGN non disponibile.");
     }
   }
 
@@ -55,30 +56,30 @@ export function ReviewPage({ gameId, navigate }: { gameId: string; navigate: Nav
       </div>
 
       <GameReviewSummary
-        game={game}
+        game={reviewedGame}
         onExport={() => void exportPgn()}
         onRetry={() => setShowRetry((value) => !value)}
         onSave={() => {
-          saveGame(game);
+          saveGame(reviewedGame);
           setExportNotice("Partita salvata nello storico locale.");
         }}
       />
       {exportNotice ? <div className="notice">{exportNotice}</div> : null}
-      {showRetry ? <RetryMistakesPanel reviews={game.moveReview} /> : null}
+      {showRetry ? <RetryMistakesPanel reviews={reviewedGame.moveReview} /> : null}
 
       <div className="review-grid grid">
         <section className="panel stack">
-          <EvaluationChart reviews={game.moveReview} activeId={active?.id} onSelect={setSelected} />
+          <EvaluationChart reviews={reviewedGame.moveReview} activeId={active?.id} onSelect={setSelected} />
           <div className="row" style={{ alignItems: "flex-start" }}>
             <ChessBoard
-              fen={active?.fenAfter ?? game.finalFen}
-              orientation={game.color}
+              fen={active?.fenAfter ?? reviewedGame.finalFen}
+              orientation={reviewedGame.color}
               lastMove={active ? { from: active.from, to: active.to } : undefined}
             />
           </div>
         </section>
         <div className="stack">
-          <MoveList reviews={game.moveReview} activeId={active?.id} onSelect={setSelected} />
+          <MoveList reviews={reviewedGame.moveReview} activeId={active?.id} onSelect={setSelected} />
           <section className="panel stack">
             <div className="split">
               <h2 className="section-title row">
